@@ -2,7 +2,7 @@
 
 namespace ModelFitting
 {
-    double gaussian_kernel(double, double);
-    double uniform_kernel(double, double);
+    double gaussian_kernel(const double &distance, double &kernel_bandwidth);
+    double uniform_kernel(const double &distance, double &kernel_bandwidth);
     
 }
