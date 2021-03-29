@@ -1,5 +1,8 @@
 #pragma once
 
+// Refs:
+// https://www.mathworks.com/matlabcentral/fileexchange/10161-mean-shift-clustering
+// https://github.com/danini/multi-x/blob/master/include/mean_shift.h
 
 namespace ModelFitting
 {
@@ -29,7 +32,7 @@ namespace ModelFitting
         void cluster(
             cv::InputArray _data_pts, 
             cv::OutputArray _clusters_centers, 
-            cv::OutputArray _cluster_pts,
+            std::vector<std::vector<int>> &_cluster_pts,
             double kernel_bandwidth);
 
         void meanshift(
@@ -38,7 +41,7 @@ namespace ModelFitting
             const int dim_num,
             cv::Mat &old_mean, 
             cv::Mat &new_mean,
-            std::vector<int> &current_cluster_votes,
+            cv::Mat &current_cluster_votes,
             std::vector<int> &current_culster_members,
             std::vector<int> &been_visited,
             const double kernel_bandwidth);//,

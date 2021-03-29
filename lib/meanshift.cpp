@@ -30,7 +30,7 @@ MeanShift::~MeanShift()
 void MeanShift::cluster(
     cv::InputArray _data_pts, 
     cv::OutputArray _clusters_centers, 
-    cv::OutputArray _cluster_pts,
+    std::vector<std::vector<int>> &_cluster_pts,
     double kernel_bandwidth)
 {
     // initialization
@@ -39,15 +39,17 @@ void MeanShift::cluster(
     const int pts_num = data_pts.rows;
     int cluster_num = 0;
     const double bandwidth_sq = kernel_bandwidth * kernel_bandwidth;
+    const double hald_bandwith = static_cast<double>(kernel_bandwidth/2);
+    const double stop_threshold = static_cast<double>(1e-3*kernel_bandwidth); 
 
     std::vector<int> init_pts_inds(pts_num); // initial points indices
-    std::iota(init_pts_inds.begin(), init_pts_inds.end(), 1);
+    std::iota(init_pts_inds.begin(), init_pts_inds.end(), 0);
 
-    double stop_threshold = 1e-3 * kernel_bandwidth; // need casting
+    // double stop_threshold = 1e-3 * kernel_bandwidth; // need casting
 
     std::vector<int> been_visited(pts_num,0);
-    std::vector<int> cluster_votes;//(numPts,0);
-    std::vector<int> current_cluster_votes;
+    std::vector<cv::Mat> cluster_votes;//(pts_num,std::vector<int>(pts_num, 0));
+    cv::Mat current_cluster_votes;
     std::vector<cv::Mat> clusters_centers;
 
     cv::RNG gen;
@@ -63,7 +65,7 @@ void MeanShift::cluster(
         //
         current_mean = data_pts.row(pt_idx);
         current_cluster_members.resize(0);
-        current_cluster_votes.resize(pts_num, 0);
+        current_cluster_votes = cv::Mat_<int>(1,pts_num, 0);//.resize(pts_num, 0);
         //
 
         while(true)
@@ -90,11 +92,83 @@ void MeanShift::cluster(
                 been_visited,
                 kernel_bandwidth);
 
-            
+            // checking stopping condition for current cluster
+            if(this->calculate_distance(current_mean, old_mean, dim_num) < stop_threshold)
+            {
+                // check for merge posibilities
+                int merge_with = -1;
+                for(size_t c = 0; c < cluster_num; c++)
+                {
+                    // distance from posible new cluster max to old cluster max
+                    double dist_to_other = this->calculate_distance(current_mean, clusters_centers.at(c), dim_num);
+                    if(dist_to_other < hald_bandwith)
+                    {
+                        merge_with = c;
+                        break;
+                    }
+                }
+
+                if (merge_with > -1)
+                {
+                    clusters_centers.at(merge_with) = 0.5 * (current_mean + clusters_centers.at(merge_with));
+                    cluster_votes.at(merge_with) += current_cluster_votes;
+                }
+                else
+                {
+                    // increment cluster numbers
+                    ++cluster_num;
+                    // record the current mean
+                    clusters_centers.push_back(current_mean);
+                    cluster_votes.push_back(current_cluster_votes);
+                }
+                
+            }
         }
-        break;
+
+        // remove visited points
+        init_pts_inds.erase(
+            std::remove_if(
+                init_pts_inds.begin(),
+                init_pts_inds.end(),
+                [been_visited](int pts_idx){ return been_visited.at(pts_idx) == 1;}
+            ),
+            init_pts_inds.end()
+        );
     }
     
+    // assigning points to clusters
+    std::vector<int> pts_cluster_votes(pts_num, 0);
+    std::vector<int> pts_cluster_idx(pts_num, -1);
+    
+    for (size_t pt_idx = 0; pt_idx < pts_num; pt_idx++)
+    {
+        for (size_t cluster_idx = 0; cluster_idx < cluster_num; cluster_idx++)
+        {
+            if(pts_cluster_votes.at(pt_idx) < cluster_votes.at(cluster_idx).at<int>(pt_idx))
+            {
+                pts_cluster_votes.at(pt_idx) = cluster_votes.at(cluster_idx).at<int>(pt_idx);
+                pts_cluster_idx.at(pt_idx) = cluster_idx;
+            }
+        }
+        
+    }
+    
+    
+    // refactor centers as Mat(center_num, dim_num)
+    _clusters_centers.create(static_cast<int>(cluster_votes.size()), dim_num, data_pts.type());
+	cv::Mat const &clusters_ref = _clusters_centers.getMatRef();
+	for (auto i = 0; i < clusters_centers.size(); ++i)
+		clusters_centers[i].copyTo(clusters_ref.row(i));
+    
+
+    // refactor cluster points as a vector of vectors of points indices
+    _cluster_pts.resize(cluster_votes.size());
+	for (size_t i = 0; i < pts_cluster_idx.size(); ++i)
+	{
+		if (pts_cluster_idx[i] == -1)
+			continue;
+		_cluster_pts[pts_cluster_idx[i]].push_back(i);
+	}
     
 
     return;
@@ -107,7 +181,7 @@ void MeanShift::meanshift(
     const int _dim_num,
     cv::Mat &_old_mean, 
     cv::Mat &_new_mean,
-    std::vector<int> &_current_cluster_votes,
+    cv::Mat &_current_cluster_votes,
     std::vector<int> &_current_culster_members,
     std::vector<int> &_been_visited,
     const double _kernel_bandwidth)
@@ -126,14 +200,14 @@ void MeanShift::meanshift(
     {
         // calculate the distance
         current_pt = _data_pts.row(idx);
-        distance_val = calculate_distance(_old_mean, current_pt, _dim_num);
+        distance_val = this->calculate_distance(_old_mean, current_pt, _dim_num);
         
         if(distance_val <= _kernel_bandwidth)
         {
         // 1.2 vote for those points as clusters
-            ++_current_cluster_votes.at(idx);
+            ++_current_cluster_votes.at<int>(idx);
         // 1.3 pass those points ||(current_mean - pts_i)/bandwidth|| to the kernel
-            kernel_val = calculate_kernel(distance_val, _kernel_bandwidth);
+            kernel_val = this->calculate_kernel(distance_val, _kernel_bandwidth);
             ++window_members_num;
         // 1.4 sum the return values of the kernel
             _new_mean += _data_pts.row(idx) * kernel_val;
