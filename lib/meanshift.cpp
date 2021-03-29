@@ -13,11 +13,15 @@ using namespace ModelFitting;
 // #define EPSILON 0.00000001
 // #define CLUSTER_EPSILON 0.5
 
-MeanShift::MeanShift(){}
+MeanShift::MeanShift():
+        max_iterations(100000),
+		max_inner_iterations(10000)
+{}
 
 MeanShift::MeanShift(
     double (*_distance_metirc)(cv::Mat &, cv::Mat &, const int &) ,
-    double (*_kernel)(const double &, const double &))
+    double (*_kernel)(const double &, const double &)): 
+    MeanShift()
 {
     this->calculate_distance = _distance_metirc;
     this->calculate_kernel = _kernel;
@@ -58,7 +62,8 @@ void MeanShift::cluster(
     std::vector<int> current_cluster_members(0);
 
     // Iterate over all data points
-    while (init_pts_inds.size())// && num pf iterations)
+    int iters = 0;
+    while (init_pts_inds.size() && iters++ < max_iterations)// && num pf iterations)
     {
         tmp_idx = gen.uniform(0,init_pts_inds.size());
         pt_idx = init_pts_inds[tmp_idx];
@@ -67,8 +72,8 @@ void MeanShift::cluster(
         current_cluster_members.resize(0);
         current_cluster_votes = cv::Mat_<int>(1,pts_num, 0);//.resize(pts_num, 0);
         //
-
-        while(true)
+        int inner_iters = 0;
+        while(inner_iters++ < max_inner_iterations)
         {
             // mean shift procedure
             // 1. Compute the mean shift vector m
@@ -121,7 +126,7 @@ void MeanShift::cluster(
                     clusters_centers.push_back(current_mean);
                     cluster_votes.push_back(current_cluster_votes);
                 }
-                
+                break;
             }
         }
 

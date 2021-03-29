@@ -16,6 +16,9 @@ namespace ModelFitting
         double (*calculate_distance)(cv::Mat &, cv::Mat &, const int &);
         // kernel pointer
         double (*calculate_kernel)(const double &, const double &);
+        //
+        int max_iterations;
+		int max_inner_iterations;
     public:
         MeanShift(/* args */);
         MeanShift(
