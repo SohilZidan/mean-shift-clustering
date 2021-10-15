@@ -3,12 +3,12 @@
 namespace ModelFitting
 {
     template<typename T>
-    T euclidean_distance(cv::Mat_<T>&, cv::Mat_<T>&, const int&);
+    T euclidean_distance(cv::Mat&, cv::Mat&, const int&);
     template<typename T>
-    T jaccard_distance(cv::Mat_<T>&, cv::Mat_<T>&, const int&);
+    T jaccard_distance(cv::Mat&, cv::Mat&, const int&);
 
     template<typename T>
-    T euclidean_distance(cv::Mat_<T> &point_a, cv::Mat_<T> &point_b, const int &_dim_num)
+    T euclidean_distance(cv::Mat &point_a, cv::Mat &point_b, const int &_dim_num)
     {
         const T * point_a_ptr = reinterpret_cast<T *>(point_a.data);
         const T * point_b_ptr = reinterpret_cast<T *>(point_b.data);
@@ -25,7 +25,7 @@ namespace ModelFitting
     }
 
     template<typename T>
-    T jaccard_distance(cv::Mat_<T> &point_a, cv::Mat_<T> &point_b, const int &_dim_num)
+    T jaccard_distance(cv::Mat &point_a, cv::Mat &point_b, const int &_dim_num)
     {
         const T * point_a_ptr = reinterpret_cast<T *>(point_a.data);
         const T * point_b_ptr = reinterpret_cast<T *>(point_b.data);
