@@ -3,9 +3,9 @@
 #include <opencv2/opencv.hpp>
 #include <numeric>
 #include <vector>
-#include "kernel.hpp"
-#include "distance.hpp"
-#include "meanshift.hpp"
+#include "kernel.h"
+#include "distance.h"
+#include "meanshift.h"
 
 
 using namespace ModelFitting;
@@ -16,7 +16,9 @@ using namespace ModelFitting;
 MeanShift::MeanShift():
         max_iterations(100000),
 		max_inner_iterations(10000)
-{}
+{
+
+}
 
 MeanShift::MeanShift(
     double (*_distance_metirc)(cv::Mat &, cv::Mat &, const int &) ,
@@ -41,6 +43,9 @@ void MeanShift::cluster(
     const cv::Mat data_pts = _data_pts.getMat();
     const int dim_num = data_pts.cols;
     const int pts_num = data_pts.rows;
+    
+    std::cout << dim_num << ", " << pts_num << std::endl;
+    // std::cout << data_pts << std::endl;
     int cluster_num = 0;
     const double bandwidth_sq = kernel_bandwidth * kernel_bandwidth;
     const double hald_bandwith = static_cast<double>(kernel_bandwidth/2);
@@ -75,6 +80,7 @@ void MeanShift::cluster(
         int inner_iters = 0;
         while(inner_iters++ < max_inner_iterations)
         {
+            // std::cout << max_inner_iterations << std::endl;
             // mean shift procedure
             // 1. Compute the mean shift vector m
             // 2. translate the old mean
@@ -100,6 +106,7 @@ void MeanShift::cluster(
             // checking stopping condition for current cluster
             if(this->calculate_distance(current_mean, old_mean, dim_num) < stop_threshold)
             {
+                // std::cout << this->calculate_distance(current_mean, old_mean, dim_num) << std::endl;
                 // check for merge posibilities
                 int merge_with = -1;
                 for(size_t c = 0; c < cluster_num; c++)

@@ -27,7 +27,7 @@ find_package(OpenMP)
 # executables #
 ###############
 
-add_executable( mean_shift main.cpp)
+add_executable( mean_shift main.cxx)
  #src/kernel.cpp src/meanshift.cpp)
 target_link_libraries( mean_shift PUBLIC ${OpenCV_LIBS} Eigen3::Eigen lib)
 
