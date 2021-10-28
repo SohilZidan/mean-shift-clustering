@@ -52,6 +52,15 @@ jobs:
           curl -sSLo $HOME/.sonar/build-wrapper-linux-x86.zip ${{ env.BUILD_WRAPPER_DOWNLOAD_URL }}
           unzip -o $HOME/.sonar/build-wrapper-linux-x86.zip -d $HOME/.sonar/
           echo "$HOME/.sonar/build-wrapper-linux-x86" >> $GITHUB_PATH
+      - uses: Dovyski/setup-opencv-action@v1
+        with:
+          opencv-version: '4.0.0'
+      - name: Install Eigen3
+        uses: kupns-aka-kupa/setup-eigen3@v1
+        with:
+          version: 3.3.9
+        env:
+          CMAKE_GENERATOR: Unix Makefiles
       - name: Run build-wrapper
         run: |
           mkdir build
@@ -63,17 +72,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           sonar-scanner --define sonar.host.url="${{ env.SONAR_SERVER_URL }}" --define sonar.cfamily.build-wrapper-output="${{ env.BUILD_WRAPPER_OUT_DIR }}"
-
-      - uses: Dovyski/setup-opencv-action@v1
-        with:
-          opencv-version: '4.0.0'
-
-      - name: Install Eigen3
-        uses: kupns-aka-kupa/setup-eigen3@v1
-        with:
-          version: 3.3.9
-        env:
-          CMAKE_GENERATOR: Unix Makefiles
 
       - name: Configure CMake
         # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
